@@ -13,6 +13,43 @@ from tools.dataset_converters.create_gt_database import (
     GTDatabaseCreater, create_groundtruth_database)
 from tools.dataset_converters.update_infos_to_v2 import update_pkl_infos
 
+from tools.dataset_converters import tum_converter as tum
+
+
+def tum_data_prep(root_path,
+                    info_prefix,
+                    version,
+                    out_dir):
+    """Prepare data related to Kitti dataset.
+
+    Related data consists of '.pkl' files recording basic infos,
+    2D annotations and groundtruth database.
+
+    Args:
+        root_path (str): Path of dataset root. 
+        info_prefix (str): The prefix of info filenames.= tum
+        version (str): Dataset version.
+        out_dir (str): Output directory of the groundtruth database info.
+        with_plane (bool, optional): Whether to use plane information.
+            Default: False.
+    """
+    tum.create_tum_info_file(root_path, info_prefix)
+    tum.create_reduced_point_cloud(root_path, info_prefix)
+
+    info_train_path = osp.join(out_dir, f'{info_prefix}_infos_train.pkl')
+    info_val_path = osp.join(out_dir, f'{info_prefix}_infos_val.pkl')
+    info_trainval_path = osp.join(out_dir, f'{info_prefix}_infos_trainval.pkl')
+    # info_test_path = osp.join(out_dir, f'{info_prefix}_infos_test.pkl')
+    update_pkl_infos('tum', out_dir=out_dir, pkl_path=info_train_path)
+    update_pkl_infos('tum', out_dir=out_dir, pkl_path=info_val_path)
+    update_pkl_infos('tum', out_dir=out_dir, pkl_path=info_trainval_path)
+    # update_pkl_infos('tum', out_dir=out_dir, pkl_path=info_test_path)
+    tum.my_create_groundtruth_database(
+        root_path,
+        info_prefix,
+        f'{info_prefix}_infos_train.pkl',
+        relative_path=False,
+        mask_anno_path='instances_train.json')
 
 def kitti_data_prep(root_path,
                     info_prefix,
@@ -335,6 +372,12 @@ if __name__ == '__main__':
                 version=args.version,
                 out_dir=args.out_dir,
                 with_plane=args.with_plane)
+    elif args.dataset == 'tum':
+        tum_data_prep(
+                root_path=args.root_path,
+                info_prefix=args.extra_tag,
+                version=args.version,
+                out_dir=args.out_dir)
     elif args.dataset == 'nuscenes' and args.version != 'v1.0-mini':
         if args.only_gt_database:
             create_groundtruth_database('NuScenesDataset', args.root_path,
